@@ -12,6 +12,8 @@ MIN_CHANNEL_LIMIT = config.min_channel_limit
 DELETE_LIMIT = config.delete_limit
 ACTION = config.action
 
+REPORT_CHANNEL_ID = config.report_channel_id
+
 messages: dict[str: dict[str: str]] = {}
 """
 messages = {
@@ -57,7 +59,15 @@ async def process_message(message: discord.Message):
 
     if num_of_same_messages >= MIN_CHANNEL_LIMIT:
         await nuke_user_messages(message, message.author)
-    
+
+async def report_action(message: discord.Message):
+    """ Function that reports an action """
+    if REPORT_CHANNEL_ID == "":
+        print("No report channel id set")
+    else:
+        print("Reporting action", message.author.name)
+        channel = client.get_channel(REPORT_CHANNEL_ID)
+        await channel.send(f"Action: {ACTION} on User: {message.author.name}")
 
 async def nuke_user_messages(del_message: discord.Message, user):
     if ACTION == "none":
@@ -70,7 +80,7 @@ async def nuke_user_messages(del_message: discord.Message, user):
         await del_message.guild.ban(user)
     else:
         print("Unknown action, user not nuked, only messages deleted", del_message.author.name)
-
+    await report_action(del_message)
     for channel in del_message.guild.text_channels:
         try:
             async for message in channel.history(limit=DELETE_LIMIT):
