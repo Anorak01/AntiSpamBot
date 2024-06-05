@@ -79,8 +79,11 @@ async def report_action(message: discord.Message):
         print("No report channel id set")
     else:
         print("Reporting action", message.author.name)
-        channel = client.get_channel(REPORT_CHANNEL_ID)
-        await channel.send(f"Action: {ACTION} on User: {message.author.name}")
+        try:
+            channel = client.get_channel(REPORT_CHANNEL_ID)
+            await channel.send(f"Action: {ACTION} on User: {message.author.name}")
+        except Exception:
+            print("Failed to send report")
 
 async def nuke_user_messages(del_message: discord.Message, user):
     """ Function used to nuke user and his bad message """
