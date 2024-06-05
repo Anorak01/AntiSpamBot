@@ -45,6 +45,7 @@ async def on_message(message: discord.Message):
 
 @client.event
 async def on_guild_join(guild: discord.Guild):
+    """ Triggered when the bot joins a guild """
     if guild.id != MY_GUILD:
         await guild.leave()
         print(f'Someone tried inviting me to {guild.name} ({guild.id})')
@@ -82,6 +83,7 @@ async def report_action(message: discord.Message):
         await channel.send(f"Action: {ACTION} on User: {message.author.name}")
 
 async def nuke_user_messages(del_message: discord.Message, user):
+    """ Function used to nuke user and his bad message """
     if ACTION == "none":
         print("User has not been nuked, only messages deleted", del_message.author.name)
     elif ACTION == "kick":
