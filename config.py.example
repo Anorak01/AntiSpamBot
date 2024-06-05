@@ -1,0 +1,4 @@
+token = "your-token-here"
+min_channel_limit = 5 # how many different channels need to have the same message before the user gets nuked
+delete_limit = 10 # number of messages to check for deletion
+action = "none" # can be none, kick or ban
