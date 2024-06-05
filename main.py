@@ -13,6 +13,7 @@ DELETE_LIMIT = config.delete_limit
 ACTION = config.action
 
 REPORT_CHANNEL_ID = config.report_channel_id
+MY_GUILD = config.guild_id
 
 messages: dict[str: dict[str: str]] = {}
 """
@@ -27,6 +28,11 @@ messages = {
 @client.event
 async def on_ready():
     """ Triggered when the bot is ready """
+    async for guild in client.fetch_guilds():
+        if guild.id != MY_GUILD:
+            print(f'Left {guild.name} ({guild.id})')
+            await guild.leave()
+
     print(f'Logged in as {client.user}')
 
 @client.event
@@ -36,6 +42,12 @@ async def on_message(message: discord.Message):
         return
 
     await process_message(message)
+
+@client.event
+async def on_guild_join(guild: discord.Guild):
+    if guild.id != MY_GUILD:
+        await guild.leave()
+        print(f'Someone tried inviting me to {guild.name} ({guild.id})')
 
 async def process_message(message: discord.Message):
     """ Function that processes the message and acts on it as needed """
