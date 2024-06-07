@@ -1,5 +1,7 @@
 """ Simple discord bot that kicks users that were hacked (usually) """
 
+# TODO: Refactor settings access to output dict instead of str that has to be json dumped - maybe do some fancy stuff with auto defaults?
+
 import json
 
 import discord
@@ -23,9 +25,11 @@ MY_GUILD = config.guild_id
 messages: dict[str: dict[str: str]] = {}
 """
 messages = {
-    "username": {
-        "channel": "message"
-        "channel2": "message"
+    "guild":{
+        "username": {
+            "channel": "message"
+            "channel2": "message"
+        }
     }
 }
 """
@@ -110,7 +114,7 @@ async def on_message(message: discord.Message):
     if message.author == bot.user:
         return
 
-    await process_message(message)
+    await process_message(message, message.guild)
 
 @bot.event
 async def on_guild_join(guild: discord.Guild):
@@ -119,55 +123,110 @@ async def on_guild_join(guild: discord.Guild):
         await guild.leave()
         print(f'Someone tried inviting me to {guild.name} ({guild.id})')
 
-async def process_message(message: discord.Message):
+async def process_message(message: discord.Message, guild: discord.Guild):
     """ Function that processes the message and acts on it as needed """
     # if user not in messages
-    if message.author.name not in messages:
-        messages[message.author.name] = {} # add him
+    if guild.id not in messages:
+        messages[guild.id] = {} # add it
+
+    # if user not in messages
+    if message.author.name not in messages[guild.id]:
+        messages[guild.id][message.author.name] = {} # add him
 
     # if channel not in users messages
-    if message.channel.id not in messages[message.author.name]:
-        messages[message.author.name][message.channel.id] = [] # add it
+    if message.channel.id not in messages[guild.id][message.author.name]:
+        messages[guild.id][message.author.name][message.channel.id] = [] # add it
 
     # if its a different new message, update it
-    if messages[message.author.name][message.channel.id] != message.content:
-        messages[message.author.name][message.channel.id] = message.content
+    if messages[guild.id][message.author.name][message.channel.id] != message.content:
+        messages[guild.id][message.author.name][message.channel.id] = message.content
 
     # check if theres enough messages to kick someone
     num_of_same_messages = 0
-    for channel in messages[message.author.name]:
-        if messages[message.author.name][channel] == message.content:
+    for channel in messages[guild.id][message.author.name]:
+        if messages[guild.id][message.author.name][channel] == message.content:
             num_of_same_messages += 1
 
-    if num_of_same_messages >= MIN_CHANNEL_LIMIT:
-        await nuke_user_messages(message, message.author)
+    sett = settingsdb.get_settings(guild.id)
+
+    if sett is None:
+        sett = {}
+    else:
+        sett = json.loads(sett)
+
+    min_channel_limit = sett.get("min_channel_limit", "nonce")
+
+    if min_channel_limit == "nonce":
+        min_channel_limit = 5
+
+        sett["min_channel_limit"] = 5 # if not set, set to default
+        settingsdb.set_settings(guild.id, json.dumps(sett))
+
+
+    if num_of_same_messages >= min_channel_limit:
+        await nuke_user_messages(message, message.author, guild)
 
 async def report_action(message: discord.Message):
     """ Function that reports an action """
-    if REPORT_CHANNEL_ID == "":
+    sett = settingsdb.get_settings(message.guild.id)
+
+    if sett is None:
+        sett = {}
+    else:
+        sett = json.loads(sett)
+
+    report_channel_id = sett.get("report_channel_id", "nonce")
+    act = sett.get("action", "nonce")
+    if act == "nonce":
+        act = "none"
+        
+        sett["action"] = "none"
+        settingsdb.set_settings(message.guild.id, json.dumps(sett))
+    
+    if report_channel_id == "nonce":
         print("No report channel id set")
     else:
         print("Reporting action", message.author.name)
         try:
-            channel = bot.get_channel(REPORT_CHANNEL_ID)
-            await channel.send(f"Action: {ACTION} on User: {message.author.name}")
+            channel = bot.get_channel(report_channel_id)
+            await channel.send(f"Action: {act} on User: {message.author.name}")
         except Exception:
             print("Failed to send report")
 
-async def nuke_user_messages(del_message: discord.Message, user):
+async def nuke_user_messages(del_message: discord.Message, user: discord.User, guild: discord.Guild):
     """ Function used to nuke user and his bad message """
-    if ACTION == "none":
+    sett = settingsdb.get_settings(guild.id)
+    if sett is None:
+        sett = {}
+    else:
+        sett = json.loads(sett)
+
+    act = sett.get("action", "nonce")
+
+    if act == "nonce":
+        act = "none"
+
+        sett["action"] = "none"
+        settingsdb.set_settings(guild.id, json.dumps(sett))
+
+    if act == "none":
         print("User has not been nuked, only messages deleted", del_message.author.name)
-    elif ACTION == "kick":
+    elif act == "kick":
         print("Kicking user", del_message.author.name)
-        await del_message.guild.kick(user)
-    elif ACTION == "ban":
+        try:
+            await guild.kick(user)
+        except discord.Forbidden:
+            print("Couldn't kick user, forbidden")
+    elif act == "ban":
         print("Banning user", del_message.author.name)
-        await del_message.guild.ban(user)
+        try:
+            await guild.ban(user)
+        except discord.Forbidden:
+            print("Couldn't ban user, forbidden")
     else:
         print("Unknown action, user not nuked, only messages deleted", del_message.author.name)
     await report_action(del_message)
-    for channel in del_message.guild.text_channels:
+    for channel in guild.text_channels:
         try:
             async for message in channel.history(limit=DELETE_LIMIT):
                 if message.author == user and del_message.content == message.content:
