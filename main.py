@@ -1,5 +1,6 @@
 """ Simple discord bot that kicks users that were hacked (usually) """
 
+# TODO: Test multiguild functionality - just add print messages in the process messages and check when writing in multiple guilds
 # TODO: Refactor settings access to output dict instead of str that has to be json dumped - maybe do some fancy stuff with auto defaults?
 
 import json
