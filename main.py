@@ -32,6 +32,7 @@ messages = {
 settingsdb = SettingsDB()
 
 settings = discord.SlashCommandGroup("settings", "Settings for the bot")
+settings.default_member_permissions = discord.Permissions(administrator=True)
 
 @bot.slash_command(description="Help command")
 async def help(ctx: discord.ApplicationContext):
@@ -54,7 +55,7 @@ async def action(ctx: discord.ApplicationContext,
     sett["action"] = setting
 
     settingsdb.set_settings(ctx.guild.id, json.dumps(sett))
-    await ctx.respond(f"Action set to {setting}")
+    await ctx.respond(f"Action set to {setting}", ephemeral=True)
 
 @settings.command()
 @discord.option("channel", description="Channel to report to", type=discord.TextChannel, required=True)
@@ -71,7 +72,24 @@ async def report_channel(ctx: discord.ApplicationContext,
     sett["report_channel_id"] = channel.id
 
     settingsdb.set_settings(ctx.guild.id, json.dumps(sett))
-    await ctx.respond(f"Report channel set to {ctx.channel.mention}")
+    await ctx.respond(f"Report channel set to {ctx.channel.mention}", ephemeral=True)
+
+@settings.command(description="Set the minimum channel limit for user to get kicked/banned")
+@discord.option("limit", description="Minimum channel limit <1, 15>", min_value=1, max_value=15, required=True)
+async def channel_limit(ctx: discord.ApplicationContext,
+                        limit: int):
+    """ Command for setting the minimum channel limit """
+    sett = settingsdb.get_settings(ctx.guild.id)
+
+    if sett is None:
+        sett = {}
+    else:
+        sett = json.loads(sett)
+
+    sett["min_channel_limit"] = limit
+
+    settingsdb.set_settings(ctx.guild.id, json.dumps(sett))
+    await ctx.respond(f"Minimum channel limit set to {limit}", ephemeral=True)
 
 bot.add_application_command(settings)
 
