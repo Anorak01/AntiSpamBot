@@ -2,6 +2,7 @@
 
 import discord
 import config
+import json
 
 from settingsdb import SettingsDB
 
@@ -28,6 +29,52 @@ messages = {
 }
 """
 
+settingsdb = SettingsDB()
+
+settings = discord.SlashCommandGroup("settings", "Settings for the bot")
+
+@bot.slash_command(description="Help command")
+async def help(ctx: discord.ApplicationContext):
+    """ Help command """
+    await ctx.respond("""All you can do with this bot:
+                      /help - Shows this message
+                      /settings - Shows the current settings""", ephemeral=True)
+
+@settings.command()
+@discord.option("setting", description="Setting to change", choices=[discord.OptionChoice("None", "none"), discord.OptionChoice("Kick", "kick"), discord.OptionChoice("Ban", "ban")], required=True)
+async def action(ctx: discord.ApplicationContext,
+                 setting: str):
+    """ Command for setting the action to take on users """
+    sett = settingsdb.get_settings(ctx.guild.id)
+    if sett is None:
+        sett = {}
+    else:
+        sett = json.loads(sett)
+
+    sett["action"] = setting
+
+    settingsdb.set_settings(ctx.guild.id, json.dumps(sett))
+    await ctx.respond(f"Action set to {setting}")
+
+@settings.command()
+@discord.option("channel", description="Channel to report to", type=discord.TextChannel, required=True)
+async def report_channel(ctx: discord.ApplicationContext,
+                         channel: discord.TextChannel):
+    """ Command for setting the channel the report is sent to """
+    sett = settingsdb.get_settings(ctx.guild.id)
+
+    if sett is None:
+        sett = {}
+    else:
+        sett = json.loads(sett)
+
+    sett["report_channel_id"] = channel.id
+
+    settingsdb.set_settings(ctx.guild.id, json.dumps(sett))
+    await ctx.respond(f"Report channel set to {ctx.channel.mention}")
+
+bot.add_application_command(settings)
+
 @bot.event
 async def on_ready():
     """ Triggered when the bot is ready """
@@ -35,7 +82,7 @@ async def on_ready():
         if guild.id != MY_GUILD:
             print(f'Left {guild.name} ({guild.id})')
             await guild.leave()
-
+    await bot.sync_commands()
     print(f'Logged in as {bot.user}')
 
 @bot.event
