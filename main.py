@@ -3,9 +3,12 @@
 import discord
 import config
 
+from settingsdb import SettingsDB
+
+
 intents = discord.Intents.default()
 intents.message_content = True
-client = discord.Client(intents=intents)
+bot = discord.Bot(intents=intents)
 
 TOKEN = config.token
 MIN_CHANNEL_LIMIT = config.min_channel_limit
@@ -25,25 +28,25 @@ messages = {
 }
 """
 
-@client.event
+@bot.event
 async def on_ready():
     """ Triggered when the bot is ready """
-    async for guild in client.fetch_guilds():
+    async for guild in bot.fetch_guilds():
         if guild.id != MY_GUILD:
             print(f'Left {guild.name} ({guild.id})')
             await guild.leave()
 
-    print(f'Logged in as {client.user}')
+    print(f'Logged in as {bot.user}')
 
-@client.event
+@bot.event
 async def on_message(message: discord.Message):
     """ Triggered on every message """
-    if message.author == client.user:
+    if message.author == bot.user:
         return
 
     await process_message(message)
 
-@client.event
+@bot.event
 async def on_guild_join(guild: discord.Guild):
     """ Triggered when the bot joins a guild """
     if guild.id != MY_GUILD:
@@ -80,7 +83,7 @@ async def report_action(message: discord.Message):
     else:
         print("Reporting action", message.author.name)
         try:
-            channel = client.get_channel(REPORT_CHANNEL_ID)
+            channel = bot.get_channel(REPORT_CHANNEL_ID)
             await channel.send(f"Action: {ACTION} on User: {message.author.name}")
         except Exception:
             print("Failed to send report")
@@ -109,4 +112,4 @@ async def nuke_user_messages(del_message: discord.Message, user):
         except discord.Forbidden:
             print("Couldn't access channel, forbidden")
 
-client.run(TOKEN)
+bot.run(TOKEN)
