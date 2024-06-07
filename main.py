@@ -1,8 +1,9 @@
 """ Simple discord bot that kicks users that were hacked (usually) """
 
+import json
+
 import discord
 import config
-import json
 
 from settingsdb import SettingsDB
 
