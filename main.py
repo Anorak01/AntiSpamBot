@@ -15,12 +15,7 @@ intents.message_content = True
 bot = discord.Bot(intents=intents)
 
 TOKEN = config.token
-MIN_CHANNEL_LIMIT = config.min_channel_limit
 DELETE_LIMIT = config.delete_limit
-ACTION = config.action
-
-REPORT_CHANNEL_ID = config.report_channel_id
-MY_GUILD = config.guild_id
 
 messages: dict[str: dict[str: str]] = {}
 """
