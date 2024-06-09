@@ -1,6 +1,5 @@
 """ Simple discord bot that kicks users that were hacked (usually) """
 
-# TODO: Test multiguild functionality - just add print messages in the process messages and check when writing in multiple guilds
 # TODO: Refactor settings access to output dict instead of str that has to be json dumped - maybe do some fancy stuff with auto defaults?
 
 import json
@@ -102,10 +101,6 @@ bot.add_application_command(settings)
 @bot.event
 async def on_ready():
     """ Triggered when the bot is ready """
-    async for guild in bot.fetch_guilds():
-        if guild.id != MY_GUILD:
-            print(f'Left {guild.name} ({guild.id})')
-            await guild.leave()
     await bot.sync_commands()
     print(f'Logged in as {bot.user}')
 
@@ -116,13 +111,6 @@ async def on_message(message: discord.Message):
         return
 
     await process_message(message, message.guild)
-
-@bot.event
-async def on_guild_join(guild: discord.Guild):
-    """ Triggered when the bot joins a guild """
-    if guild.id != MY_GUILD:
-        await guild.leave()
-        print(f'Someone tried inviting me to {guild.name} ({guild.id})')
 
 async def process_message(message: discord.Message, guild: discord.Guild):
     """ Function that processes the message and acts on it as needed """
@@ -163,9 +151,9 @@ async def process_message(message: discord.Message, guild: discord.Guild):
         sett["min_channel_limit"] = 5 # if not set, set to default
         settingsdb.set_settings(guild.id, json.dumps(sett))
 
-
     if num_of_same_messages >= min_channel_limit:
         await nuke_user_messages(message, message.author, guild)
+        messages[guild.id][message.author.name] = {} # reset messages from that user
 
 async def report_action(message: discord.Message):
     """ Function that reports an action """
@@ -180,10 +168,10 @@ async def report_action(message: discord.Message):
     act = sett.get("action", "nonce")
     if act == "nonce":
         act = "none"
-        
+
         sett["action"] = "none"
         settingsdb.set_settings(message.guild.id, json.dumps(sett))
-    
+
     if report_channel_id == "nonce":
         print("No report channel id set")
     else:
