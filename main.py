@@ -1,6 +1,7 @@
 """ Simple discord bot that kicks users that were hacked (usually) """
 
 # TODO: Refactor settings access to output dict instead of str that has to be json dumped - maybe do some fancy stuff with auto defaults?
+# TODO: Make a function for setting default settings values if they're not present
 
 import json
 
@@ -162,9 +163,9 @@ async def report_action(message: discord.Message):
     report_channel_id = sett.get("report_channel_id", "nonce")
     act = sett.get("action", "nonce")
     if act == "nonce":
-        act = "none"
+        act = "kick"
 
-        sett["action"] = "none"
+        sett["action"] = "kick"
         settingsdb.set_settings(message.guild.id, json.dumps(sett))
 
     if report_channel_id == "nonce":
@@ -188,9 +189,9 @@ async def nuke_user_messages(del_message: discord.Message, user: discord.User, g
     act = sett.get("action", "nonce")
 
     if act == "nonce":
-        act = "none"
+        act = "kick"
 
-        sett["action"] = "none"
+        sett["action"] = "kick"
         settingsdb.set_settings(guild.id, json.dumps(sett))
 
     if act == "none":
