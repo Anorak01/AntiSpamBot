@@ -38,9 +38,37 @@ settings.default_member_permissions = discord.Permissions(administrator=True)
 @bot.slash_command(description="Help command")
 async def help(ctx: discord.ApplicationContext):
     """ Help command """
-    await ctx.respond("""All you can do with this bot:
-                      /help - Shows this message
-                      /settings - Shows the current settings""", ephemeral=True)
+    await ctx.respond(embed=HelpEmbed(), view=HelpView(), ephemeral=True)
+
+class HelpView(discord.ui.View):
+    """ Help View containing the button to switch to Settings submenu """
+    @discord.ui.button(label="Settings", style=discord.ButtonStyle.primary)
+    async def button_callback(self, _: discord.Button, interaction: discord.Interaction):
+        """ Function called when user presses button """
+        await interaction.response.defer()
+        await interaction.edit_original_response(embed=SettingsHelpEmbed(), view=SettingsHelpView())
+
+class HelpEmbed(discord.Embed):
+    """ Embed for help message"""
+    def __init__(self):
+        super().__init__(title="Welcome to AntiSpamBot", description="A simple discord bot that monitors channels for those pesky link spamming users", color=discord.Color.blue())
+        self.add_field(name="Commands", value="/help - Shows this message\n/settings - Shows/changes the bots settings", inline=False)
+
+class SettingsHelpView(discord.ui.View):
+    """ View containing the button to switch back to Help menu """
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.primary)
+    async def button_callback(self, _: discord.Button, interaction: discord.Interaction):
+        """ Function called when user presses button """
+        await interaction.response.defer()
+        await interaction.edit_original_response(embed=HelpEmbed(), view=HelpView())
+
+class SettingsHelpEmbed(discord.Embed):
+    """ Embed for settings message """
+    def __init__(self):
+        super().__init__(title="Settings", description="Summary of settings that can be changed for the bot with the </settings:1248751297411289088> command", color=discord.Color.blue())
+        self.add_field(name="Action ```action```", value="Action to take on users\n`Default: Kick`", inline=False)
+        self.add_field(name="Report Channel ```report_channel```", value="Channel to report to\n`Optional`", inline=False)
+        self.add_field(name="Minimum Channel Limit ```channel_limit```", value="How many different channels need to have the same message before the user gets acted upon\n`Default: 5`", inline=False)
 
 @settings.command()
 @discord.option("setting", description="Setting to change", choices=[discord.OptionChoice("None", "none"), discord.OptionChoice("Kick", "kick"), discord.OptionChoice("Ban", "ban")], required=True)
@@ -97,7 +125,10 @@ bot.add_application_command(settings)
 @bot.event
 async def on_ready():
     """ Triggered when the bot is ready """
+    await bot.change_presence(status=discord.Status.online, activity=discord.Activity(type=discord.ActivityType.streaming, name="loading"))
     await bot.sync_commands()
+    await bot.change_presence(status=discord.Status.online, activity=discord.Activity(type=discord.ActivityType.listening, name="spam"))
+
     print(f'Logged in as {bot.user}')
 
 @bot.event
