@@ -3,6 +3,10 @@ A simple-ish discord bot that monitors channels for those pesky link spamming us
 
 ---
 
+## Invite link: https://discord.com/oauth2/authorize?client_id=1247864850424664124
+
+---
+
 # Installation
 If you want to install the bot yourself:
 1) Clone the repository
