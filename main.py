@@ -82,7 +82,7 @@ class SettingsShowEmbed(discord.Embed):
         if settingsdict.get("report_channel_id", "None") == "None":
             self.add_field(name="Report Channel", value="None", inline=False)
         else:
-            self.add_field(name="Report Channel", value=f"<#{settingsdict.get("report_channel_id", "None")}>", inline=False)
+            self.add_field(name="Report Channel", value=f"<#{settingsdict.get('report_channel_id', 'None')}>", inline=False)
         self.add_field(name="Minimum Channel Limit", value=settingsdict.get("min_channel_limit", "5"), inline=False)
 
 @settings.command()
@@ -127,7 +127,7 @@ async def report_channel(ctx: discord.ApplicationContext,
     sett["report_channel_id"] = channel.id
 
     settingsdb.set_settings(ctx.guild.id, json.dumps(sett))
-    await ctx.respond(f"Report channel set to {ctx.channel.mention}", ephemeral=True)
+    await ctx.respond(f"Report channel set to {channel.mention}", ephemeral=True)
 
 @settings.command(description="Set the minimum channel limit for user to get kicked/banned")
 @discord.option("limit", description="Minimum channel limit <1, 15>", min_value=1, max_value=15, required=True)
