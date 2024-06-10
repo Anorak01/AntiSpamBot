@@ -65,10 +65,36 @@ class SettingsHelpView(discord.ui.View):
 class SettingsHelpEmbed(discord.Embed):
     """ Embed for settings message """
     def __init__(self):
-        super().__init__(title="Settings", description="Summary of settings that can be changed for the bot with the </settings:1248751297411289088> command", color=discord.Color.blue())
+        super().__init__(title="Settings", description="Summary of settings that can be changed for the bot with the `/settings <subcommand>` command", color=discord.Color.blue())
+        self.add_field(name="Show ```show```", value="Shows the current settings", inline=False)
         self.add_field(name="Action ```action```", value="Action to take on users\n`Default: Kick`", inline=False)
         self.add_field(name="Report Channel ```report_channel```", value="Channel to report to\n`Optional`", inline=False)
         self.add_field(name="Minimum Channel Limit ```channel_limit```", value="How many different channels need to have the same message before the user gets acted upon\n`Default: 5`", inline=False)
+
+class SettingsShowEmbed(discord.Embed):
+    """
+    Embed that constructs the settings show embed
+    Accepts settings as a dict
+    """
+    def __init__(self, settingsdict: dict): # TODO: Refactor after better default settings are added
+        super().__init__(title="Settings", description="Your server settings:", color=discord.Color.blue())
+        self.add_field(name="Action", value=settingsdict.get("action", "Kick").capitalize(), inline=False)
+        if settingsdict.get("report_channel_id", "None") == "None":
+            self.add_field(name="Report Channel", value="None", inline=False)
+        else:
+            self.add_field(name="Report Channel", value=f"<#{settingsdict.get("report_channel_id", "None")}>", inline=False)
+        self.add_field(name="Minimum Channel Limit", value=settingsdict.get("min_channel_limit", "5"), inline=False)
+
+@settings.command()
+async def show(ctx: discord.ApplicationContext):
+    """ Command for showing the settings """
+    sett = settingsdb.get_settings(ctx.guild.id)
+    if sett is None:
+        sett = {}
+    else:
+        sett = json.loads(sett)
+
+    await ctx.respond(embed=SettingsShowEmbed(sett), ephemeral=True)
 
 @settings.command()
 @discord.option("setting", description="Setting to change", choices=[discord.OptionChoice("None", "none"), discord.OptionChoice("Kick", "kick"), discord.OptionChoice("Ban", "ban")], required=True)
