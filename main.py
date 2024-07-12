@@ -162,7 +162,7 @@ async def on_message(message: discord.Message):
     """ Triggered on every message """
     if message.author == bot.user:
         return
-    
+
     if message.channel.type == discord.ChannelType.private:
         return
 
