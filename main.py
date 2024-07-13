@@ -240,7 +240,6 @@ async def report_action(message: discord.Message):
         print("Reporting action", message.author.name)
         try:
             channel = bot.get_channel(report_channel_id)
-            await channel.send(f"Action: {act} on User: {message.author.name}")
         except Exception:
             print("Failed to send report")
 
