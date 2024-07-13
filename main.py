@@ -10,6 +10,7 @@ import config
 
 from settingsdb import SettingsDB
 
+from typing import Dict
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -18,10 +19,10 @@ bot = discord.Bot(intents=intents)
 TOKEN = config.token
 DELETE_LIMIT = config.delete_limit
 
-messages: dict[str: dict[str: str]] = {}
+messages: Dict[int, Dict[str, Dict[int, str]]] = {}
 """
 messages = {
-    "guild":{
+    guild_id:{
         "username": {
             "channel": "message"
             "channel2": "message"
@@ -166,7 +167,8 @@ async def on_message(message: discord.Message):
     if message.channel.type == discord.ChannelType.private:
         return
 
-    await process_message(message, message.guild)
+    if message.guild != None:
+        await process_message(message, message.guild)
 
 async def process_message(message: discord.Message, guild: discord.Guild):
     """ Function that processes the message and acts on it as needed """
@@ -180,7 +182,7 @@ async def process_message(message: discord.Message, guild: discord.Guild):
 
     # if channel not in users messages
     if message.channel.id not in messages[guild.id][message.author.name]:
-        messages[guild.id][message.author.name][message.channel.id] = [] # add it
+        messages[guild.id][message.author.name][message.channel.id] = "" # add it
 
     # if its a different new message, update it
     if messages[guild.id][message.author.name][message.channel.id] != message.content:
@@ -213,7 +215,10 @@ async def process_message(message: discord.Message, guild: discord.Guild):
 
 async def report_action(message: discord.Message):
     """ Function that reports an action """
-    sett = settingsdb.get_settings(message.guild.id)
+    if message.guild != None:
+        sett = settingsdb.get_settings(message.guild.id)
+    else:
+        sett = None
 
     if sett is None:
         sett = {}
@@ -226,7 +231,8 @@ async def report_action(message: discord.Message):
         act = "kick"
 
         sett["action"] = "kick"
-        settingsdb.set_settings(message.guild.id, json.dumps(sett))
+        if message.guild != None:
+            settingsdb.set_settings(message.guild.id, json.dumps(sett))
 
     if report_channel_id == "nonce":
         print("No report channel id set")
@@ -238,7 +244,7 @@ async def report_action(message: discord.Message):
         except Exception:
             print("Failed to send report")
 
-async def nuke_user_messages(del_message: discord.Message, user: discord.User, guild: discord.Guild):
+async def nuke_user_messages(del_message: discord.Message, user: discord.User | discord.Member, guild: discord.Guild):
     """ Function used to nuke user and his bad message """
     sett = settingsdb.get_settings(guild.id)
     if sett is None:
